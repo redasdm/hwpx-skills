@@ -1,0 +1,6 @@
+interface:
+  display_name: "HWPX Plan"
+  short_description: "Create Education SW plan-style HWPX files."
+  default_prompt: "Use $hwpx-plan to create an HWPX with the bundled 교육용 SW 계약 개선 계획-style template, Roman section-header tables, and symbol-only body outline."
+policy:
+  allow_implicit_invocation: true

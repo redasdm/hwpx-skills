@@ -1,0 +1,4 @@
+interface:
+  display_name: "HWPX Core"
+  short_description: "Read, edit, generate, and validate HWPX files."
+  default_prompt: "Use hwpx-core to inspect, edit, generate, or validate an HWPX document while preserving layout and page count."
