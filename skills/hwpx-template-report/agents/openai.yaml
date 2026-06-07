@@ -1,0 +1,4 @@
+interface:
+  display_name: "HWPX Template Report"
+  short_description: "Reuse Korean HWPX report forms while preserving tables, headers, and layout."
+  default_prompt: "Use $hwpx-template-report for Korean 보고요지/보고자료 documents using an existing HWPX report template, preserving fixed labels, tables, and layout. For the 교육용 SW 계약 개선 계획-style Roman header layout, use $hwpx-plan instead."

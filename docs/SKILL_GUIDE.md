@@ -1,8 +1,9 @@
 # HWPX Skill Guide
 
-This repository contains two Codex skills:
+This repository contains three Codex skills:
 
 - `hwpx-core`: the base XML-first HWPX workflow.
+- `hwpx-template-report`: a template-fill workflow for Korean official 보고요지/보고자료 forms.
 - `hwpx-plan`: a specialized template skill for the landscape plan/report style that uses Roman-numeral section header tables.
 
 ## Repository Layout
@@ -15,6 +16,9 @@ skills/
     templates/
     references/
     tests/
+  hwpx-template-report/
+    SKILL.md
+    agents/
   hwpx-plan/
     SKILL.md
     scripts/
@@ -44,6 +48,34 @@ python .\skills\hwpx-core\scripts\analyze_template.py ".\template.hwpx" `
 python .\skills\hwpx-core\scripts\validate.py ".\result.hwpx"
 
 python .\skills\hwpx-core\scripts\text_extract.py ".\result.hwpx"
+```
+
+## Using `hwpx-template-report`
+
+Use `hwpx-template-report` when filling or adapting an existing Korean official report template such as `보고요지`, `보고자료`, `안건`, 업무보고, 결과보고, or 현황보고.
+
+This skill is for template preservation:
+
+- reuse the original HWPX ZIP entries;
+- inspect `Contents/section0.xml` and `Contents/header.xml`;
+- preserve fixed labels such as `보고요지` and `안건`;
+- replace only the target title/content cells or text nodes;
+- copy existing table paragraphs when new structured sections are needed;
+- optionally search an Obsidian vault for supporting evidence when the user asks for prior audit, council, or background material.
+
+Do not use `hwpx-template-report` for the Education SW plan-style Roman header layout. Use `hwpx-plan` for that form.
+
+Typical request:
+
+```text
+Use $hwpx-template-report to create a 보고요지 from this template HWPX and the attached source document.
+```
+
+Validation is stricter for template-fill work:
+
+```powershell
+python .\skills\hwpx-core\scripts\validate.py ".\result.hwpx"
+python .\skills\hwpx-core\scripts\page_guard.py --reference ".\template.hwpx" --output ".\result.hwpx" --mode template-fill
 ```
 
 ## Using `hwpx-plan`
@@ -129,5 +161,4 @@ Check:
 - Do not commit `__pycache__`, logs, or generated output documents.
 - Keep skill instructions concise and executable.
 - Prefer template cloning and text-node replacement over rebuilding HWPX XML from scratch.
-- Validate both the skill folder and at least one generated HWPX before publishing changes.
-
+- Validate each skill folder and at least one generated HWPX before publishing changes.
