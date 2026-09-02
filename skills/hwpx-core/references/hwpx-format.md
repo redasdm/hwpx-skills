@@ -90,7 +90,8 @@ document.hwpx (ZIP archive)
   <hp:pos treatAsChar="1" />
   <hp:tr>                           <!-- 행 -->
     <hp:tc borderFillIDRef="3">     <!-- 셀 -->
-      <hp:cellAddr colAddr="0" rowAddr="0" colSpan="1" rowSpan="1"/>
+      <hp:cellAddr colAddr="0" rowAddr="0"/>
+      <hp:cellSpan colSpan="1" rowSpan="1"/>
       <hp:cellSz width="7200" height="3600"/>
       <hp:cellMargin left="510" right="510" top="142" bottom="142"/>
       <hp:subList>
@@ -104,6 +105,20 @@ document.hwpx (ZIP archive)
   </hp:tr>
 </hp:tbl>
 ```
+
+### 표 논리 격자 정합성 (한컴 편집 안전성)
+
+한/글은 표를 열 때보다 셀을 편집하거나 행·열을 조정할 때 표 모델을 다시 계산한다. 따라서 XML이 well-formed이고 화면에 렌더링되는 것만으로는 표가 안전하다고 볼 수 없다.
+
+각 `<hp:tbl>`마다 다음을 검증한다.
+
+- `rowCnt`/`colCnt`가 실제 `<hp:tr>`/`<hp:tc>` 구조와 일치하는가
+- `hp:cellAddr`의 `rowAddr`/`colAddr`가 0부터 시작하고 표 범위를 벗어나지 않는가
+- `rowAddr`/`colAddr`가 논리 격자의 해당 위치와 일치하는가
+- `rowAddr + rowSpan <= rowCnt`, `colAddr + colSpan <= colCnt`인가
+- `cellSpan`을 반영한 점유 격자에 겹침이나 빈 칸이 없는가
+
+예를 들어 `rowCnt="4"`인 표의 마지막 행에 `rowAddr="5"`가 있으면 파싱·렌더링이 되더라도 셀 편집 때 한/글이 비정상 종료할 수 있다. `<hp:linesegarray>`는 파생 줄 배치 캐시이므로 이를 삭제하거나 재생성하는 것만으로 `cellAddr` 오류를 고칠 수 없다.
 
 ### 섹션 속성 (Section Properties)
 

@@ -93,14 +93,26 @@ The script does not refresh `hp:linesegarray` by default. Leave visual line wrap
 - Use template paragraph nodes for indentation and style. Do not rely on literal spaces for body indentation.
 - Copy existing same-shape body tables when a table is needed. For roadmap content, reuse the 4-column management table style.
 
+## 한컴 편집 안정성 점검
+
+이 형식은 복사한 표가 많으므로 화면 모양이 같아도 표의 내부 좌표가 손상될 수 있다. `hwpx-core`의 표 논리 격자 검사를 반드시 적용한다.
+
+- 복사·삽입한 모든 표에서 `rowCnt`/`colCnt`와 `<hp:tr>`/`<hp:tc>` 구조를 대조한다.
+- 각 `hp:cellAddr`의 0-based `rowAddr`/`colAddr`가 논리 격자 범위 안에 있고, `cellSpan`을 반영해 겹침·빈 칸·범위 초과가 없는지 확인한다. `rowCnt="4"`인데 마지막 행이 `rowAddr="5"`인 형태는 금지한다.
+- `linesegarray`를 삭제·재생성하는 것만으로 표 좌표 오류를 고친 것으로 간주하지 않는다.
+- 변경한 표마다 한/글에서 셀을 실제 선택해 임시 텍스트를 입력·삭제하고 별도 사본에 저장한다. 단순 열기·저장 성공은 편집 검증이 아니다.
+
 ## Validation
 
 Run at least:
 
 ```powershell
-python C:\Users\redas\.codex\skills\hwpx-core\scripts\validate.py "<output.hwpx>"
-python C:\Users\redas\.codex\skills\hwpx-core\scripts\text_extract.py "<output.hwpx>"
+python C:\Users\redas\.codex\skills\hwpx-core\scripts\validate.py "<output.hwpx>" --strict
+python C:\Users\redas\.codex\skills\hwpx-core\scripts/text_extract.py "<output.hwpx>"
+python C:\Users\redas\.codex\skills\hwpx-core\scripts/page_guard.py --reference "<template.hwpx>" --output "<output.hwpx>"
 ```
+
+For every changed table, perform a Hancom edit smoke test on a disposable copy: select a changed cell, insert and delete a temporary marker, save, and confirm the marker stayed in the intended cell. Opening and saving alone is insufficient.
 
 Text audit requirements:
 

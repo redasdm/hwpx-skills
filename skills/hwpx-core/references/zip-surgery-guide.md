@@ -226,28 +226,40 @@ para = (
 | `CELL`   | 셀 단위로 페이지 넘김 허용 (권장)                 |
 | `NONE`   | 표 전체가 한 페이지에 강제 배치 — 표가 크면 잘림  |
 
+## 표 편집 안전성: 논리 격자 좌표 검사
+
+표는 열기·렌더링보다 셀 편집 시 내부 모델을 다시 계산하므로, 아래 검사를 `validate.py`와 별도로 생략하지 않는다.
+
+- 각 `<hp:tbl>`의 `rowCnt`/`colCnt`와 `<hp:tr>`/`<hp:tc>` 구조를 대조한다.
+- `hp:cellAddr`의 `rowAddr`/`colAddr`는 0-based 논리 좌표이며 범위 안에 있어야 한다. `rowAddr + rowSpan <= rowCnt`, `colAddr + colSpan <= colCnt`도 확인한다.
+- `cellSpan`을 반영한 점유 격자에 겹침·빈 칸·범위 밖 좌표가 없어야 한다. `rowCnt="4"`인데 마지막 행에 `rowAddr="5"`가 있는 표는 XML 파싱과 렌더링이 되어도 편집 불가 문서다.
+- `linesegarray`는 파생 레이아웃 캐시다. 캐시 삭제·재생성은 `cellAddr`/`cellSpan` 검증이나 수리를 대신하지 못한다.
+- 변경한 표는 한/글에서 셀 선택 → 임시 텍스트 입력·삭제 → 별도 사본 저장으로 편집 스모크 테스트를 한다. 열기·다시 저장만 성공한 것은 충분한 검증이 아니다.
+
 ---
 
 ## 9. 검증 체크리스트
 
-편집 완료 후 반드시 확인 (`validate.py --strict` 또는 `zip_surgery.py validate`):
+편집 완료 후 반드시 `validate.py --strict`를 실행한다. `zip_surgery.py validate`는 ZIP 메타데이터 보조 검사이며 표 논리 격자 검사를 대체하지 않는다.
 
 - [ ] `standalone='no'` 보존되었는가
 - [ ] xmlns 선언 10개 이상(일반적으로 15개) 루트 태그에 존재하는가
 - [ ] 본문에 추가 xmlns 선언이 0개인가
-- [ ] 개행이 1개(XML 선언 뒤)만 존재하는가
+- [ ] 개행 수가 원본과 달라지지 않았고 자식 요소 사이에 새 개행을 넣지 않았는가
 - [ ] 비-section 파일이 원본과 byte-identical인가
 - [ ] ZIP 엔트리 순서, 압축 방식이 원본과 동일한가
 - [ ] cell_writer.py를 실행하지 않았는가
-- [ ] validate.py를 통과하는가
-- [ ] 한글에서 실제로 열리는가 (최종 확인 필수)
+- [ ] `validate.py --strict`를 통과하는가
+- [ ] 모든 표의 `rowCnt`/`colCnt`/`cellAddr`/`cellSpan` 논리 격자가 유효한가
+- [ ] 변경한 표를 한/글에서 실제 셀 편집 후 별도 사본으로 저장했는가
 
 ```python
+with zipfile.ZipFile(original, 'r') as z:
+    original_sec0 = z.read('Contents/section0.xml').decode('utf-8')
 with zipfile.ZipFile(v3, 'r') as z:
     sec0 = z.read('Contents/section0.xml').decode('utf-8')
 
-assert "standalone='no'" in sec0[:100]
-assert sec0.count('\n') == 1
+assert sec0.count('\n') == original_sec0.count('\n')
 assert 'xmlns:config=' in sec0[:2000]
 
 import re

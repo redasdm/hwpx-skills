@@ -33,6 +33,15 @@ This skill is a specialization on top of `hwpx-core`. Load/use `hwpx-core` as th
    - If the template has an existing table, reuse its row count and headings where feasible. Convert source content into the same table shape.
 6. Write first to `C:\tmp\<task-name>\...`, then copy the verified final file to the user-facing destination.
 
+## 한컴 편집 안정성 (필수)
+
+보고서 양식은 기존 표를 복사해 채우는 경우가 많아 화면이 정상이어도 내부 표 좌표가 깨질 수 있다. `hwpx-core`의 표 논리 격자 검사를 결과물마다 적용한다.
+
+- 모든 `<hp:tbl>`의 `rowCnt`/`colCnt`, 실제 행·셀 배열, `hp:cellAddr`, `hp:cellSpan`을 대조한다.
+- `rowAddr`/`colAddr`는 0-based 논리 좌표이며 범위 초과·행 순서 불일치·span 겹침·빈 칸을 허용하지 않는다. `rowCnt="4"` 표의 마지막 행에 `rowAddr="5"`가 있으면 렌더링 여부와 관계없이 수정한다.
+- `<hp:linesegarray>`는 파생 레이아웃 캐시다. 이를 삭제하거나 재생성하는 것만으로 `cellAddr` 오류를 해결했다고 판단하지 않는다.
+- 변경한 표마다 한/글에서 셀 선택 → 임시 텍스트 입력·삭제 → 별도 사본 저장을 수행한다. 열기·다시 저장만 성공한 결과는 편집 안전성 검증을 통과한 것으로 보지 않는다.
+
 ## Evidence From Obsidian Vault
 
 When the user says to check the vault, `볼트`, previous audit materials, prior reports, or missing background:
@@ -49,23 +58,26 @@ When the user says to check the vault, `볼트`, previous audit materials, prior
 
 When a source section is better as a table but the template has only one suitable table:
 
-1. Parse `Contents/section0.xml` with `xml.etree.ElementTree`, preserving namespaces.
+1. Inspect `Contents/section0.xml` with `analyze_template.py` or a read-only namespace-aware parser. Never serialize the section with `xml.etree.ElementTree`/`lxml`; preserve the original XML declaration, namespace placement, and whitespace.
 2. Locate the table paragraph or surrounding heading by text.
-3. `copy.deepcopy()` the existing table paragraph and, if needed, the heading paragraph.
-4. Replace only `hp:t` text nodes in the clone.
-5. Insert the cloned heading/table near the related section.
-6. Re-run validation. `page_guard --mode template-fill` may warn that a table was added; this is acceptable when the user requested a new table and the warning says existing tables were preserved.
+3. Copy the existing table paragraph as a raw XML slice through `zip_surgery.py`/string helpers; do not round-trip it through an XML serializer.
+4. Replace only `hp:t` text nodes in the copied structure.
+5. Before packaging, validate every table's logical grid: `rowCnt`/`colCnt`, `cellAddr` (0-based row/column), `cellSpan`, and the absence of out-of-range, overlapping, or missing slots.
+6. Insert the cloned heading/table near the related section.
+7. Re-run validation. `page_guard --mode template-fill` may warn that a table was added; this is acceptable when the user requested a new table and the warning says existing tables were preserved.
 
 Use this approach for sections like operating status, risk matrix, issue/action list, audit findings, schedules, or budget history when they read better as structured rows.
 
 ## Validation Required
 
-Before claiming completion, run both:
+Before claiming completion, run:
 
 ```powershell
-python C:\Users\redas\.codex\skills\hwpx-core\scripts\validate.py "<output.hwpx>"
+python C:\Users\redas\.codex\skills\hwpx-core\scripts\validate.py "<output.hwpx>" --strict
 python C:\Users\redas\.codex\skills\hwpx-core\scripts\page_guard.py --reference "<template.hwpx>" --output "<output.hwpx>" --mode template-fill
 ```
+
+For every changed table, perform a Hancom edit smoke test on a disposable copy: select a changed cell, insert and delete a temporary marker, save, and confirm the marker stayed in the intended cell. Opening and saving alone is insufficient.
 
 Also do a text audit by reading `Contents/section0.xml`:
 

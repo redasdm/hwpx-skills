@@ -8,13 +8,17 @@ Checks (standard):
   - mimetype is the first ZIP entry and stored without compression
   - All XML files are well-formed
   - Image embedding consistency (BinData/header.xml/content.hpf/section0.xml)
+  - Table logical-grid coordinate integrity (row/col counts, cell addresses/spans)
 
 Checks (--strict, for ZIP-level surgery output):
   - standalone='no' present in section0.xml XML declaration
   - Sufficient xmlns declarations on root <hs:sec> tag (>=10)
   - No xmlns declarations in section body (all on root tag)
-  - Only 1 newline in section0.xml (after XML declaration)
+  - No newlines in section0.xml
   - Table auto-adjust attributes (noAdjust="0", pageBreak="CELL")
+
+Table coordinate integrity is checked in standard and strict modes because a
+well-formed but invalid `cellAddr` can make Hancom terminate during cell edits.
 
 Usage:
     python validate.py document.hwpx
@@ -105,6 +109,12 @@ def validate(hwpx_path: str, *, strict: bool = False) -> tuple[list[str], list[s
                 except etree.XMLSyntaxError as e:
                     errors.append(f"Malformed XML in {name}: {e}")
 
+        # Table logical-grid coordinate checks (standard and strict modes)
+        if "Contents/section0.xml" in names:
+            errors.extend(
+                _table_coordinate_checks(zf.read("Contents/section0.xml"))
+            )
+
         # Image embedding consistency checks (always run when images exist)
         errors_img, warnings_img = _image_checks(zf, names)
         errors.extend(errors_img)
@@ -115,6 +125,137 @@ def validate(hwpx_path: str, *, strict: bool = False) -> tuple[list[str], list[s
             errors.extend(_strict_checks(zf, names))
 
     return errors, warnings
+
+
+def _table_coordinate_checks(section_xml: bytes) -> list[str]:
+    """Check every table's logical cell grid before Hancom editing."""
+    try:
+        root = etree.fromstring(section_xml)
+    except etree.XMLSyntaxError:
+        # XML well-formedness errors are reported by the caller.
+        return []
+
+    errors: list[str] = []
+
+    def read_int(element, attribute: str, context: str) -> int | None:
+        raw = element.get(attribute)
+        if raw is None:
+            errors.append(f"{context}: missing {attribute}")
+            return None
+        try:
+            return int(raw)
+        except (TypeError, ValueError):
+            errors.append(f"{context}: invalid {attribute}={raw!r}")
+            return None
+
+    tables = root.xpath(".//*[local-name()='tbl']")
+    for table_index, table in enumerate(tables):
+        table_label = table.get("id") or f"#{table_index}"
+        context = f"Table {table_label}"
+        row_count = read_int(table, "rowCnt", context)
+        col_count = read_int(table, "colCnt", context)
+        if row_count is None or col_count is None:
+            continue
+        if row_count < 0 or col_count < 0:
+            errors.append(
+                f"{context}: rowCnt={row_count} and colCnt={col_count} "
+                "must be non-negative"
+            )
+            continue
+
+        rows = table.xpath("./*[local-name()='tr']")
+        if len(rows) != row_count:
+            errors.append(
+                f"{context}: rowCnt={row_count} but has {len(rows)} hp:tr rows"
+            )
+
+        occupied: dict[tuple[int, int], tuple[int, int]] = {}
+        for row_index, row in enumerate(rows):
+            cells = row.xpath("./*[local-name()='tc']")
+            for cell_index, cell in enumerate(cells):
+                cell_context = f"{context} cell {row_index}:{cell_index}"
+                addr_nodes = cell.xpath("./*[local-name()='cellAddr']")
+                span_nodes = cell.xpath("./*[local-name()='cellSpan']")
+                if len(addr_nodes) != 1:
+                    errors.append(
+                        f"{cell_context}: expected one hp:cellAddr, "
+                        f"found {len(addr_nodes)}"
+                    )
+                    continue
+                if len(span_nodes) != 1:
+                    errors.append(
+                        f"{cell_context}: expected one hp:cellSpan, "
+                        f"found {len(span_nodes)}"
+                    )
+                    continue
+
+                addr = addr_nodes[0]
+                span = span_nodes[0]
+                row_addr = read_int(addr, "rowAddr", cell_context)
+                col_addr = read_int(addr, "colAddr", cell_context)
+                row_span = read_int(span, "rowSpan", cell_context)
+                col_span = read_int(span, "colSpan", cell_context)
+                if None in (row_addr, col_addr, row_span, col_span):
+                    continue
+                if row_span <= 0 or col_span <= 0:
+                    errors.append(
+                        f"{cell_context}: rowSpan={row_span} and "
+                        f"colSpan={col_span} must be positive"
+                    )
+                    continue
+                if row_addr != row_index:
+                    errors.append(
+                        f"{cell_context}: rowAddr={row_addr} does not match "
+                        f"logical row {row_index}"
+                    )
+                if not (0 <= row_addr < row_count):
+                    errors.append(
+                        f"{cell_context}: rowAddr={row_addr} is outside "
+                        f"rowCnt={row_count}"
+                    )
+                if not (0 <= col_addr < col_count):
+                    errors.append(
+                        f"{cell_context}: colAddr={col_addr} is outside "
+                        f"colCnt={col_count}"
+                    )
+                if row_addr < 0 or col_addr < 0:
+                    continue
+                if row_addr + row_span > row_count:
+                    errors.append(
+                        f"{cell_context}: row span ends at "
+                        f"{row_addr + row_span}, beyond rowCnt={row_count}"
+                    )
+                    continue
+                if col_addr + col_span > col_count:
+                    errors.append(
+                        f"{cell_context}: column span ends at "
+                        f"{col_addr + col_span}, beyond colCnt={col_count}"
+                    )
+                    continue
+
+                for grid_row in range(row_addr, row_addr + row_span):
+                    for grid_col in range(col_addr, col_addr + col_span):
+                        previous = occupied.get((grid_row, grid_col))
+                        if previous is not None:
+                            errors.append(
+                                f"{cell_context}: cell grid position "
+                                f"({grid_row},{grid_col}) overlaps "
+                                f"cell {previous[0]}:{previous[1]}"
+                            )
+                        else:
+                            occupied[(grid_row, grid_col)] = (
+                                row_index,
+                                cell_index,
+                            )
+
+        expected_slots = row_count * col_count
+        if len(occupied) != expected_slots:
+            errors.append(
+                f"{context}: logical grid fills {len(occupied)} of "
+                f"{expected_slots} slots"
+            )
+
+    return errors
 
 
 def _image_checks(zf: ZipFile, names: list[str]) -> tuple[list[str], list[str]]:
