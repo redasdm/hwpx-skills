@@ -1,11 +1,11 @@
 ---
 name: hwpx-plan
-description: Use when creating or updating HWPX files in the landscape Korean official plan layout, either the `교육용 SW 계약 개선 계획(안).hwpx`-style Education SW form or the AIEP AI 업무지원·상담 지식지도 계획안 form. Both use a 6-row table cover, copied Roman-numeral section header tables, symbol-only body outline (`□`, `❍`, `-`), and optional roadmap tables. Use this skill when the user mentions the plan(안) style, the three-line/center-title cover table, Roman numerals inside a copied table graphic, the AIEP AI 업무지원 계획안, or asks to avoid numbered `1.`/`2.` body headings in that form.
+description: Use when creating or updating HWPX files in the landscape Korean official plan layout, one of the bundled forms - the `교육용 SW 계약 개선 계획(안).hwpx`-style Education SW form, the AIEP AI 업무지원·상담 지식지도 계획안 form, or the 미래교육연구원 보고자료 form (교원 파견·운영 요청). All use a 6-row table cover, copied Roman-numeral section header tables, symbol-only body outline (`□`, `❍`, `-`), and optional tables. Use this skill when the user mentions the plan(안) style, the three-line/center-title cover table, Roman numerals inside a copied table graphic, the AIEP AI 업무지원 계획안, a 체험센터 보고자료 with 추진 배경·목적·근거·요청개요, or asks to avoid numbered `1.`/`2.` body headings in that form.
 ---
 
-# HWPX Plan (Education SW / AIEP)
+# HWPX Plan
 
-Build Korean official HWPX plan documents that reuse the landscape plan(안) layout. This skill is a narrow specialization on top of `hwpx-core`; use a bundled template asset as the base ZIP package and modify only `Contents/section0.xml`.
+Build Korean official HWPX documents in the plan(안)/보고자료 layout family. The skill is a narrow specialization on top of `hwpx-core`; pick the bundled asset that matches the target document, use it as the base ZIP package, and modify only `Contents/section0.xml`.
 
 ## When To Use
 
@@ -23,6 +23,12 @@ AIEP AI 업무지원 form (`assets/aiep_ai_subscription_plan_template.hwpx`):
 - Used for the AIEP AI 업무지원·상담 지식지도 계획안 and its 수정본 (account counts, cost, and scope of use).
 - Generated prose must not name a specific vendor or model; use `AI 업무지원 서비스` or `AI`.
 
+체험센터·미래교육연구원 보고자료 form (`assets/center_dispatch_report_template.hwpx`):
+
+- Same cover/header structure, used for 필요성·요청 보고자료 such as 교원 파견, 운영 규모, 협업체계.
+- Sections follow `Ⅰ 추진 배경`, `Ⅱ 추진 목적`, `Ⅲ 추진 근거`, `Ⅳ 요청개요` and then `□` blocks.
+- 근거 lines cite 공약 번호 (`9-1-1`, `9-2-3`) and the latest 보도·통계; appendices go under `<참고자료>` with a `※` source note.
+
 Do not use this for generic HWPX editing, 공문, 보고요지, 안건, or unrelated plan forms unless the user explicitly says this exact layout should be reused.
 
 ## Bundled Templates
@@ -31,8 +37,9 @@ Do not use this for generic HWPX editing, 공문, 보고요지, 안건, or unrel
 | --- | --- |
 | Education SW 계약 개선 계획(안) style | `assets/education_sw_plan_template.hwpx` |
 | AIEP AI 업무지원·상담 지식지도 계획안 | `assets/aiep_ai_subscription_plan_template.hwpx` |
+| 체험센터·미래교육연구원 보고자료 (교원 파견·운영 요청) | `assets/center_dispatch_report_template.hwpx` |
 
-Keep both assets. Pass `--template "<asset>"` when the AIEP form, not the default Education SW asset, is the base.
+Keep all assets. Pass `--template "<asset>"` for anything other than the default Education SW asset.
 
 ## Input Pattern
 
@@ -93,7 +100,7 @@ python "$SKILL_DIR\scripts\education_sw_plan_style.py" `
   --output "<output.hwpx>"
 ```
 
-Pass `--template "<template.hwpx>"` when the user provides a different template with the same layout, or when building the AIEP form.
+Pass `--template "<template.hwpx>"` to build any form of the family, including the bundled AIEP and 체험센터 보고자료 assets. Any document of this layout family works as a template as long as it contains a 6x2 cover table, an 8x7 section-header table, a `□` heading line, a `❍` body line, an empty body paragraph, and a 4-column table; the script reuses those paragraphs and reports which one is missing otherwise. Cover fill writes the title into the merged title cell (row 3) and `작성일 / 보고부서` into the footer cell (row 6). A template whose title cell has a single line renders the title only — the script prints a note when a subtitle had to be dropped.
 
 The script does not refresh `hp:linesegarray` by default. Leave visual line wrapping to Hancom/manual editing unless the user explicitly asks for automatic line layout. If needed, pass `--refresh-line-layout`.
 
@@ -157,6 +164,20 @@ python "$SKILL_DIR/scripts/aiep_account_update.py" `
 - 계정별 개별 이용은 담당 업무를 병렬 처리하고, 확정 답변·자료를 상담 지식지도에 공동 축적하기 위한 것으로 설명한다.
 - AI가 작성한 초안은 담당자가 확인한 뒤 상담 답변·FAQ·안내문·교육자료로 재사용한다.
 - 개인정보·민감정보·비공개 자료를 외부 AI 서비스에 그대로 입력하지 않으며, 필요한 경우 비식별화·보안 검토 후 사용한다.
+
+## 체험센터·미래교육연구원 보고자료 양식
+
+기준 자산은 `assets/center_dispatch_report_template.hwpx`이다. 교원 파견, 운영 규모, 협업체계처럼 필요성과 요청을 함께 정리하는 보고자료에 쓴다.
+
+- 표지: 6행×2열 표. 제목은 3행의 병합된 제목 셀, 작성일·부서는 6행 셀에만 둔다. 제목 줄이 하나뿐이므로 부제는 렌더링되지 않는다.
+- 섹션 순서: `Ⅰ 추진 배경` → `Ⅱ 추진 목적` → `Ⅲ 추진 근거` → `Ⅳ 요청개요`를 기본으로 하고, 이후 `□` 블록으로 운영 규모·운영 내용·역할 배분을 정리한다.
+- 계층: `□` 블록 제목 → `❍` 항목 → `-` 세부만 사용하며, 독립적인 `1.`·`2.` 제목은 만들지 않는다.
+- 표: 운영 규모(운영일·차시), 운영 시간표, 역할 배분, 부서별 현황 같은 표를 `□` 블록 아래에 붙인다. 새로 그리지 말고 양식의 기존 표 스타일을 복사하고 행·열·셀 좌표를 유지한다.
+- 근거 표기: `9-1-1`, `9-2-3`처럼 공약 번호를 붙이고, 최신 보도·통계는 기준일을 함께 적는다. 기준일이 다른 수치는 어느 자료 기준인지 밝힌다.
+- 부록: `<참고자료>` 블록 뒤에 자체 조사 표를 두고 `※ 자체 조사한 자료로 일부 수치가 다를 수 있음` 같은 출처 각주를 붙인다.
+- 문체: `❍ 요청인원: ...`, `❍ 장소: ...`처럼 라벨과 값을 한 줄로 쓰고, 인원·차시·기간 수치를 서로 일치시킨다.
+
+`□` 블록 아래에 들어가는 표는 개요를 만든 뒤 `zip_surgery.py` 수준의 원시 XML 복사로 붙이는 편이 안전하다. `ElementTree`로 section 전체를 다시 쓰면 표 좌표와 이미지가 손상될 수 있다.
 
 ## 한컴 편집 안정성 점검
 
