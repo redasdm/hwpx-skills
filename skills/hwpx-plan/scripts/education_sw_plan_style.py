@@ -255,8 +255,20 @@ def build_document(template: Path, source_text: Path) -> ET.ElementTree:
     return ET.ElementTree(root)
 
 
+def serialize_section_xml(root: ET.Element, template_section: bytes) -> bytes:
+    """Serialize like 한/글 does: template declaration/root namespaces, no newlines."""
+    body = ET.tostring(root, encoding="utf-8", xml_declaration=False).decode("utf-8")
+    body = body.replace("\r\n", "").replace("\n", "")
+    body_open = body.find("<hs:sec")
+    body_start = body.find(">", body_open) + 1
+    template_text = template_section.decode("utf-8")
+    template_open = template_text.find("<hs:sec")
+    template_start = template_text.find(">", template_open) + 1
+    return (template_text[:template_start] + body[body_start:]).encode("utf-8")
+
+
 def write_output(template: Path, output: Path, tree: ET.ElementTree) -> None:
-    section_bytes = ET.tostring(tree.getroot(), encoding="utf-8", xml_declaration=True)
+    section_bytes = serialize_section_xml(tree.getroot(), read_section_xml(template))
     output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(template, "r") as src, zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as dst:
         for info in src.infolist():

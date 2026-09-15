@@ -33,6 +33,12 @@ This skill is a specialization on top of `hwpx-core`. Load/use `hwpx-core` as th
    - If the template has an existing table, reuse its row count and headings where feasible. Convert source content into the same table shape.
 6. Write first to `C:\tmp\<task-name>\...`, then copy the verified final file to the user-facing destination.
 
+## Korean Typography
+
+- Avoid the Korean middle-dot character `U+00B7` in generated report prose, headings, table cells, bullet labels, and filenames unless it is genuinely required by a proper name, fixed official notation, or a symbol whose meaning would change without it.
+- Prefer commas, `및`, `과/와`, or `/` according to the sentence meaning. Use an existing bullet symbol only when the template requires a bullet, not as a separator between ordinary phrases.
+- Before delivery, search the final `<hp:t>` text and the filename for `U+00B7`, then remove every nonessential occurrence.
+
 ## 한컴 편집 안정성 (필수)
 
 보고서 양식은 기존 표를 복사해 채우는 경우가 많아 화면이 정상이어도 내부 표 좌표가 깨질 수 있다. `hwpx-core`의 표 논리 격자 검사를 결과물마다 적용한다.
@@ -46,7 +52,7 @@ This skill is a specialization on top of `hwpx-core`. Load/use `hwpx-core` as th
 
 When the user says to check the vault, `볼트`, previous audit materials, prior reports, or missing background:
 
-1. Search the Obsidian vault first, usually `C:\Users\redas\OneDrive\Desktop\ObsidianVault`.
+1. Search the Obsidian vault first, usually `C:\Users\user\Desktop\ObsidianVault`.
 2. Prefer focused searches over broad manual browsing. Use UTF-8 Python scripts when Korean search terms or file names break in the shell.
 3. Search both filenames and Markdown contents. Good starting terms:
    - Target topic terms: project name, 사업명, product names, budget amounts, document title words.
@@ -73,8 +79,8 @@ Use this approach for sections like operating status, risk matrix, issue/action 
 Before claiming completion, run:
 
 ```powershell
-python C:\Users\redas\.codex\skills\hwpx-core\scripts\validate.py "<output.hwpx>" --strict
-python C:\Users\redas\.codex\skills\hwpx-core\scripts\page_guard.py --reference "<template.hwpx>" --output "<output.hwpx>" --mode template-fill
+python C:\Users\user\.codex\skills\hwpx-core\scripts\validate.py "<output.hwpx>" --strict
+python C:\Users\user\.codex\skills\hwpx-core\scripts\page_guard.py --reference "<template.hwpx>" --output "<output.hwpx>" --mode template-fill
 ```
 
 For every changed table, perform a Hancom edit smoke test on a disposable copy: select a changed cell, insert and delete a temporary marker, save, and confirm the marker stayed in the intended cell. Opening and saving alone is insufficient.
