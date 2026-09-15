@@ -8,7 +8,7 @@ Reusable Codex skills for creating, editing, validating, and template-filling Ko
 | --- | --- |
 | `hwpx-core` | XML-first HWPX toolchain: extract, analyze, build, validate, page-guard, table/cell handling, and template-based generation. |
 | `hwpx-template-report` | Korean official 보고요지/보고자료 template-fill workflow for existing HWPX report forms, including evidence lookup and flexible table copying. |
-| `hwpx-plan` | Specialized plan/report layout based on the `교육용 SW 계약 개선 계획(안).hwpx` style: landscape cover table, Roman-numeral section header tables, symbol-only body outline, and roadmap tables. |
+| `hwpx-plan` | Specialized plan/report layout based on the `교육용 SW 계약 개선 계획(안).hwpx` style: landscape cover table, Roman-numeral section header tables, symbol-only body outline, and roadmap tables. Also covers the AIEP AI 업무지원·상담 지식지도 계획안 form and the 4-account → 5-account update helper. |
 
 ## Install
 
@@ -44,7 +44,15 @@ python .\skills\hwpx-plan\scripts\education_sw_plan_style.py `
   --output .\result.hwpx
 ```
 
-The `hwpx-plan` script uses its bundled template by default. Pass `--template <path>` only when you have another HWPX template with the same layout.
+The `hwpx-plan` script uses its bundled Education SW template by default. Pass `--template .\skills\hwpx-plan\assets\aiep_ai_subscription_plan_template.hwpx` for the AIEP AI 업무지원 계획안 form, or any other HWPX template with the same layout.
+
+For the AIEP form, add one researcher account to an existing 4-account document:
+
+```powershell
+python .\skills\hwpx-plan\scripts\aiep_account_update.py `
+  ".\AIEP_plan_4accounts.hwpx" `
+  ".\AIEP_plan_5accounts.hwpx"
+```
 
 ## Documentation
 

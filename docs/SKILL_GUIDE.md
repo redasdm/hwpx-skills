@@ -65,6 +65,8 @@ This skill is for template preservation:
 
 Do not use `hwpx-template-report` for the Education SW plan-style Roman header layout. Use `hwpx-plan` for that form.
 
+Report prose follows the skill's Korean Typography rule: avoid the middle-dot character `U+00B7` in prose, headings, table cells, bullet labels, and filenames unless a proper name, fixed official notation, or a symbol meaning requires it. Prefer commas, `및`, `과/와`, or `/`, and audit the final `<hp:t>` text before delivery.
+
 Typical request:
 
 ```text
@@ -136,6 +138,29 @@ The script detects a roadmap table when it sees these four consecutive lines:
 
 Subsequent lines are grouped in rows of four and inserted into a copied table style. Values such as `1단계`, `2단계`, and `3단계` are table data and remain unchanged.
 
+### AIEP AI 업무지원 Form
+
+The same layout family also covers the AIEP AI 업무지원·상담 지식지도 계획안 form. Use its bundled asset as the base:
+
+```powershell
+python .\skills\hwpx-plan\scripts\education_sw_plan_style.py `
+  --source-text ".\outline.txt" `
+  --template ".\skills\hwpx-plan\assets\aiep_ai_subscription_plan_template.hwpx" `
+  --output ".\result.hwpx"
+```
+
+When the user hands over an existing AIEP plan and only wants wording, numbers, or one account changed, edit that document with raw ZIP surgery through `zip_surgery.py` instead of regenerating it: keep `Contents/section0.xml` as the only modified entry, and do not round-trip it through an XML serializer or `cell_writer.py`.
+
+Adding one researcher account to the 4-account document has a dedicated helper:
+
+```powershell
+python .\skills\hwpx-plan\scripts\aiep_account_update.py `
+  ".\AIEP_plan_4accounts.hwpx" `
+  ".\AIEP_plan_5accounts.hwpx"
+```
+
+It updates 수량 (`4개` → `5개`), 계정당 200천원 × 4개 → × 5개, 총액 `800천원` → `1,000천원`, 소요예산 `금800,000원(금팔십만원)` → `금1,000,000원(금일백만원)`, and the joint-use scope line for the SW교육 아카데미·영재·수석 담당 연구사. The `4개월` 이용기간 is not an account count and must stay unchanged. Keep generated prose free of vendor or model names (`Claude`/`클로드` included); write `AI 업무지원 서비스` or `AI`.
+
 ## Validation Checklist
 
 After generation, run:
@@ -155,6 +180,8 @@ Check:
 - roadmap table data is present if supplied.
 
 `page_guard.py` may fail when the number of sections or tables intentionally differs from the reference template. In that case, report the structural difference instead of claiming page parity.
+
+For `hwpx-plan` output, `validate.py --strict` may report `standalone='no' missing` from `section0.xml`. The bundled templates and 한/글-saved files declare `standalone="yes"`, so treat that single finding as expected and confirm editability with the 한/글 smoke test instead. The generated section XML stays single-line and reuses the template's XML declaration and root namespace declarations.
 
 ## Contributor Notes
 
