@@ -161,25 +161,6 @@ python .\skills\hwpx-plan\scripts\aiep_account_update.py `
 
 It updates 수량 (`4개` → `5개`), 계정당 200천원 × 4개 → × 5개, 총액 `800천원` → `1,000천원`, 소요예산 `금800,000원(금팔십만원)` → `금1,000,000원(금일백만원)`, and the joint-use scope line for the SW교육 아카데미·영재·수석 담당 연구사. The `4개월` 이용기간 is not an account count and must stay unchanged. Keep generated prose free of vendor or model names (`Claude`/`클로드` included); write `AI 업무지원 서비스` or `AI`.
 
-### 체험센터·미래교육연구원 보고자료 Form
-
-Use the 보고자료 asset for 필요성·요청 보고자료 such as 교원 파견, 운영 규모, and 협업체계:
-
-```powershell
-python .\skills\hwpx-plan\scripts\education_sw_plan_style.py `
-  --template ".\skills\hwpx-plan\assets\center_dispatch_report_template.hwpx" `
-  --source-text ".\examples\center-report-outline.txt" `
-  --output ".\report.hwpx"
-```
-
-Sections run `Ⅰ 추진 배경`, `Ⅱ 추진 목적`, `Ⅲ 추진 근거`, `Ⅳ 요청개요`, then `□` blocks for 운영 규모·운영 내용·역할 배분. Cite 공약 번호 (`9-1-1`) with the latest 보도·통계, and put self-collected tables under `<참고자료>` with a `※` source note. The cover has a single title line, so a subtitle line in the outline is not rendered and the script prints a note about it.
-
-Body tables (운영 규모, 시간표, 역할 배분, 부서별 현황) are not generated from the outline: copy the template's existing table through raw XML surgery and replace only its `hp:t` text, keeping row/column/cell coordinates intact.
-
-### Using Another Template
-
-`--template` accepts any document of the layout family. The script locates the 6x2 cover table, the 8x7 section-header table, the `□` heading line, the `❍` body line, an empty paragraph, and a 4-column table, and reports which one is missing. `education_sw_plan_template.hwpx` is the one asset whose slot paragraphs are pinned by position, because its example content predates the `□`/`❍` convention.
-
 ## Validation Checklist
 
 After generation, run:
