@@ -4,7 +4,7 @@ This repository contains three Codex skills:
 
 - `hwpx-core`: the base XML-first HWPX workflow.
 - `hwpx-template-report`: a template-fill workflow for Korean official 보고요지/보고자료 forms.
-- `hwpx-plan`: a specialized template skill for the landscape plan/report style that uses Roman-numeral section header tables.
+- `hwpx-plan`: specialized template skills for the plan(안) forms — the 전북교육청 기본계획(안) form (A4 portrait) and the landscape Education SW / AIEP forms, all of which use Roman-numeral section header tables.
 
 ## Repository Layout
 
@@ -82,7 +82,22 @@ python .\skills\hwpx-core\scripts\page_guard.py --reference ".\template.hwpx" --
 
 ## Using `hwpx-plan`
 
-Use `hwpx-plan` only for the Education SW plan-style HWPX layout:
+### 전북교육청 기본계획(안) form
+
+Base asset: `skills/hwpx-plan/assets/jbe_ai_agent_basic_plan_template.hwpx` (교수학습용 AI에이전트 구축 및 운영 기본계획(안) v10).
+
+- A4 portrait, body width 48190 HWPUNIT, nine `pageBreak="1"` paragraphs.
+- Skeleton: 결재란 8x9 → cover 5x2 (logo cell + title cell) → emblem block 2x2 → summary page → body title page → Ⅰ~Ⅷ sections (8x7 header tables) → 첨부 1x2.
+- The title text appears on three cover tables and must be changed on all of them; keep the `hidePageNum="1"` control in the cover's second paragraph.
+- Body outline is `❐` → `❍` → `-`, indented with leading spaces inside `<hp:t>` plus a negative `hc:intent`. Do not strip those spaces for this form.
+- The summary page heading symbol is U+F071 with its own charPr; do not replace it with `□`.
+- Edit this form with `zip_surgery.py` on `Contents/section0.xml` only. `education_sw_plan_style.py` does not target it.
+
+Full cell maps, style IDs, and the color/font palette are in `skills/hwpx-plan/SKILL.md`.
+
+### Education SW form
+
+Use this only for the Education SW plan-style HWPX layout:
 
 - 6-row cover table;
 - title/subtitle placed only in the large merged center cover cell;
